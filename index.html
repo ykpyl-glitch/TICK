@@ -1,0 +1,747 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>TICK // Tactical Typing Cyberdeck</title>
+
+  <!-- Native iPadOS App / PWA Configuration -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="tick">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="theme-color" content="#030305">
+
+  <!-- Linked Manifest & Icons -->
+  <link rel="manifest" href="./manifest.json">
+  <link rel="apple-touch-icon" href="./apple-touch-icon.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png">
+  <link rel="icon" type="image/png" sizes="512x512" href="./icon-512.png">
+  <link rel="icon" type="image/svg+xml" href="./icon.svg">
+
+  <style>
+    :root {
+      --bg: #030305;
+      --panel: #090306;
+      --panel-hi: #120409;
+      --border: #2a0710;
+      --border-hi: #550a1c;
+      --red: #ff0033;
+      --red-dim: #8a001d;
+      --red-glow: rgba(255, 0, 51, 0.35);
+      --text: #f2e6e8;
+      --text-dim: #6e4750;
+      --ok: #995c68;
+      --font: 'JetBrains Mono', 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100dvh;
+      background-color: var(--bg);
+      background-image: 
+        linear-gradient(rgba(255, 0, 51, 0.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 0, 51, 0.025) 1px, transparent 1px);
+      background-size: 24px 24px;
+      color: var(--text);
+      font-family: var(--font);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 16px;
+      background: var(--panel);
+      border-bottom: 1px solid var(--border);
+      font-size: 12px;
+      letter-spacing: 0.08em;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 700;
+      color: var(--red);
+      text-shadow: 0 0 8px var(--red-glow);
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      background: var(--red);
+      box-shadow: 0 0 8px var(--red);
+      animation: pulse 1.8s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.25; }
+    }
+
+    .hud-stats {
+      display: flex;
+      gap: 18px;
+      align-items: center;
+    }
+
+    .stat-box {
+      display: flex;
+      align-items: baseline;
+      gap: 6px;
+    }
+
+    .stat-label {
+      color: var(--text-dim);
+      font-size: 10px;
+    }
+
+    .stat-val {
+      color: var(--red);
+      font-size: 15px;
+      font-weight: 700;
+      text-shadow: 0 0 6px var(--red-glow);
+    }
+
+    .controls {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .btn, select.btn {
+      background: var(--panel-hi);
+      color: var(--text);
+      border: 1px solid var(--border-hi);
+      padding: 5px 10px;
+      font-family: var(--font);
+      font-size: 11px;
+      cursor: pointer;
+      text-transform: uppercase;
+      transition: all 0.12s ease;
+      outline: none;
+    }
+
+    .btn:hover, .btn.active {
+      background: var(--red);
+      color: #000;
+      border-color: var(--red);
+      box-shadow: 0 0 12px var(--red-glow);
+      font-weight: 700;
+    }
+
+    main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 12px 16px;
+      gap: 12px;
+      overflow: hidden;
+    }
+
+    .terminal-box {
+      position: relative;
+      background: rgba(9, 3, 6, 0.88);
+      border: 1px solid var(--border-hi);
+      padding: 18px 22px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      box-shadow: inset 0 0 25px rgba(255, 0, 51, 0.05);
+      cursor: text;
+      min-height: 120px;
+    }
+
+    .terminal-header {
+      display: flex;
+      justify-content: space-between;
+      font-size: 11px;
+      color: var(--text-dim);
+      border-bottom: 1px dashed var(--border);
+      padding-bottom: 6px;
+      margin-bottom: 10px;
+    }
+
+    .prompt-stream {
+      font-size: clamp(18px, 2.4vw, 26px);
+      line-height: 1.55;
+      letter-spacing: 0.04em;
+      word-break: break-all;
+      white-space: pre-wrap;
+      overflow-y: auto;
+      max-height: 100%;
+    }
+
+    .ch { color: var(--text-dim); }
+    .ch.ok { color: var(--ok); }
+    .ch.err {
+      background: var(--red);
+      color: #000;
+      box-shadow: 0 0 8px var(--red);
+    }
+    .ch.cur {
+      background: var(--red);
+      color: #000;
+      font-weight: 700;
+      box-shadow: 0 0 12px var(--red);
+      animation: blink 1s steps(2, start) infinite;
+    }
+
+    @keyframes blink {
+      0%, 100% { background: var(--red); color: #000; }
+      50% { background: rgba(255, 0, 51, 0.25); color: var(--text); }
+    }
+
+    .terminal-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 11px;
+      color: var(--text-dim);
+      border-top: 1px dashed var(--border);
+      padding-top: 6px;
+      margin-top: 10px;
+    }
+
+    .finger-callout {
+      color: var(--red);
+      font-weight: 700;
+      text-shadow: 0 0 6px var(--red-glow);
+    }
+
+    .hands-bar {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      padding: 8px 14px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+    }
+
+    .hand-group {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+    }
+
+    .hand-title {
+      font-size: 10px;
+      color: var(--text-dim);
+      letter-spacing: 0.1em;
+    }
+
+    .fingers-row {
+      display: flex;
+      gap: 6px;
+      flex: 1;
+      justify-content: space-around;
+    }
+
+    .finger-node {
+      flex: 1;
+      text-align: center;
+      padding: 5px 4px;
+      font-size: 10px;
+      border: 1px solid var(--border);
+      background: #050203;
+      color: var(--text-dim);
+      transition: all 0.1s ease;
+    }
+
+    .finger-node.active {
+      border-color: var(--red);
+      background: var(--red);
+      color: #000;
+      font-weight: 700;
+      box-shadow: 0 0 12px var(--red);
+      transform: translateY(-2px);
+    }
+
+    .deck-wrapper {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      background: var(--panel);
+      border: 1px solid var(--border-hi);
+      padding: 10px;
+      user-select: none;
+    }
+
+    .deck-wrapper.hidden { display: none; }
+
+    .kb-row {
+      display: flex;
+      gap: 5px;
+      justify-content: center;
+    }
+
+    .key {
+      flex: 1;
+      height: clamp(36px, 5.8vh, 48px);
+      background: #060204;
+      border: 1px solid var(--border);
+      color: var(--text);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-size: clamp(12px, 1.5vw, 15px);
+      font-weight: 600;
+      position: relative;
+      cursor: pointer;
+      transition: transform 0.05s, background 0.1s, border-color 0.1s;
+    }
+
+    .key.wide-15 { flex: 1.5; font-size: 10px; }
+    .key.wide-18 { flex: 1.8; font-size: 10px; }
+    .key.wide-22 { flex: 2.2; font-size: 10px; }
+    .key.space { flex: 6.5; font-size: 11px; letter-spacing: 0.2em; }
+
+    .key.bump::after {
+      content: '';
+      position: absolute;
+      bottom: 5px;
+      width: 12px;
+      height: 2px;
+      background: var(--red);
+      box-shadow: 0 0 4px var(--red);
+    }
+
+    .key.target {
+      border-color: var(--red);
+      color: var(--red);
+      background: rgba(255, 0, 51, 0.14);
+      box-shadow: 0 0 12px var(--red-glow), inset 0 0 6px var(--red-glow);
+    }
+
+    .key.pressed {
+      background: var(--red) !important;
+      color: #000 !important;
+      transform: scale(0.95);
+      box-shadow: 0 0 16px var(--red);
+    }
+
+    .key.err-flash {
+      background: #fff !important;
+      color: var(--red) !important;
+    }
+
+    #hwProxy {
+      position: fixed;
+      top: -100px;
+      left: -100px;
+      width: 1px;
+      height: 1px;
+      opacity: 0;
+      border: none;
+      outline: none;
+    }
+  </style>
+</head>
+<body>
+
+  <input id="hwProxy" type="text" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" />
+
+  <header>
+    <div class="brand">
+      <span class="status-dot"></span>
+      <span>TICK // CYBERDECK_TTY</span>
+    </div>
+
+    <div class="hud-stats">
+      <div class="stat-box">
+        <span class="stat-label">WPM</span>
+        <span class="stat-val" id="wpmVal">0</span>
+      </div>
+      <div class="stat-box">
+        <span class="stat-label">ACC</span>
+        <span class="stat-val" id="accVal">100%</span>
+      </div>
+      <div class="stat-box">
+        <span class="stat-label">ERR</span>
+        <span class="stat-val" id="errVal">0</span>
+      </div>
+      <div class="stat-box">
+        <span class="stat-label">STREAK</span>
+        <span class="stat-val" id="streakVal">0</span>
+      </div>
+    </div>
+
+    <div class="controls">
+      <select id="drillSelect" class="btn" title="Select Drill">
+        <option value="0">01: TR_HOME_ROW (asdf jklşi)</option>
+        <option value="1">02: TR_SPECIAL (ğüşıöç)</option>
+        <option value="2">03: TR_WORDS_CORE</option>
+        <option value="3">04: LINUX_REDTEAM_BASH</option>
+        <option value="4">05: EN_CYBER_PAYLOAD</option>
+      </select>
+      <button class="btn" id="layoutBtn">LAYOUT: TR-Q</button>
+      <button class="btn" id="soundBtn">TICK: ON</button>
+      <button class="btn" id="deckBtn">DECK: SHOW</button>
+      <button class="btn" id="resetBtn">RESET</button>
+    </div>
+  </header>
+
+  <main>
+    <div class="terminal-box" id="terminalBox">
+      <div class="terminal-header">
+        <span id="sessionPath">root@tick:/dev/tty1# ./inject --keymap=tr-q</span>
+        <span id="progressText">0 / 0 BYTES</span>
+      </div>
+
+      <div class="prompt-stream" id="promptStream"></div>
+
+      <div class="terminal-footer">
+        <span>NEXT_FINGER: <span class="finger-callout" id="fingerCallout">READY</span></span>
+        <span>0x7FFF00A4 // BLUETOOTH_HID_READY</span>
+      </div>
+    </div>
+
+    <div class="hands-bar">
+      <div class="hand-group">
+        <span class="hand-title">L_HAND</span>
+        <div class="fingers-row">
+          <div class="finger-node" data-finger="L_PINKY">PINKY</div>
+          <div class="finger-node" data-finger="L_RING">RING</div>
+          <div class="finger-node" data-finger="L_MID">MID</div>
+          <div class="finger-node" data-finger="L_INDEX">INDEX</div>
+          <div class="finger-node" data-finger="THUMB">THUMB</div>
+        </div>
+      </div>
+      <div class="hand-group">
+        <div class="fingers-row">
+          <div class="finger-node" data-finger="THUMB">THUMB</div>
+          <div class="finger-node" data-finger="R_INDEX">INDEX</div>
+          <div class="finger-node" data-finger="R_MID">MID</div>
+          <div class="finger-node" data-finger="R_RING">RING</div>
+          <div class="finger-node" data-finger="R_PINKY">PINKY</div>
+        </div>
+        <span class="hand-title">R_HAND</span>
+      </div>
+    </div>
+
+    <div class="deck-wrapper" id="deckWrapper"></div>
+  </main>
+
+  <script>
+    const LAYOUTS = {
+      'TR-Q': [
+        [
+          { k: '"', f: 'L_PINKY' }, { k: '1', f: 'L_PINKY' }, { k: '2', f: 'L_RING' }, { k: '3', f: 'L_MID' },
+          { k: '4', f: 'L_INDEX' }, { k: '5', f: 'L_INDEX' }, { k: '6', f: 'R_INDEX' }, { k: '7', f: 'R_INDEX' },
+          { k: '8', f: 'R_MID' }, { k: '9', f: 'R_RING' }, { k: '0', f: 'R_PINKY' }, { k: '*', f: 'R_PINKY' },
+          { k: '-', f: 'R_PINKY' }, { k: 'BACK', f: 'R_PINKY', w: 'wide-18' }
+        ],
+        [
+          { k: 'TAB', f: 'L_PINKY', w: 'wide-15' }, { k: 'q', f: 'L_PINKY' }, { k: 'w', f: 'L_RING' }, { k: 'e', f: 'L_MID' },
+          { k: 'r', f: 'L_INDEX' }, { k: 't', f: 'L_INDEX' }, { k: 'y', f: 'R_INDEX' }, { k: 'u', f: 'R_INDEX' },
+          { k: 'ı', f: 'R_MID' }, { k: 'o', f: 'R_RING' }, { k: 'p', f: 'R_PINKY' }, { k: 'ğ', f: 'R_PINKY' }, { k: 'ü', f: 'R_PINKY' }
+        ],
+        [
+          { k: 'CAPS', f: 'L_PINKY', w: 'wide-18' }, { k: 'a', f: 'L_PINKY' }, { k: 's', f: 'L_RING' }, { k: 'd', f: 'L_MID' },
+          { k: 'f', f: 'L_INDEX', bump: true }, { k: 'g', f: 'L_INDEX' }, { k: 'h', f: 'R_INDEX' }, { k: 'j', f: 'R_INDEX', bump: true },
+          { k: 'k', f: 'R_MID' }, { k: 'l', f: 'R_RING' }, { k: 'ş', f: 'R_PINKY' }, { k: 'i', f: 'R_PINKY' },
+          { k: ',', f: 'R_PINKY' }, { k: 'ENTER', f: 'R_PINKY', w: 'wide-18' }
+        ],
+        [
+          { k: 'SHIFT', f: 'L_PINKY', w: 'wide-22' }, { k: '<', f: 'L_PINKY' }, { k: 'z', f: 'L_PINKY' }, { k: 'x', f: 'L_RING' },
+          { k: 'c', f: 'L_MID' }, { k: 'v', f: 'L_INDEX' }, { k: 'b', f: 'L_INDEX' }, { k: 'n', f: 'R_INDEX' },
+          { k: 'm', f: 'R_INDEX' }, { k: 'ö', f: 'R_MID' }, { k: 'ç', f: 'R_RING' }, { k: '.', f: 'R_PINKY' },
+          { k: 'SHIFT', f: 'R_PINKY', w: 'wide-22' }
+        ],
+        [
+          { k: 'SPACE', map: ' ', f: 'THUMB', w: 'space' }
+        ]
+      ],
+      'US': [
+        [
+          { k: '`', f: 'L_PINKY' }, { k: '1', f: 'L_PINKY' }, { k: '2', f: 'L_RING' }, { k: '3', f: 'L_MID' },
+          { k: '4', f: 'L_INDEX' }, { k: '5', f: 'L_INDEX' }, { k: '6', f: 'R_INDEX' }, { k: '7', f: 'R_INDEX' },
+          { k: '8', f: 'R_MID' }, { k: '9', f: 'R_RING' }, { k: '0', f: 'R_PINKY' }, { k: '-', f: 'R_PINKY' },
+          { k: '=', f: 'R_PINKY' }, { k: 'BACK', f: 'R_PINKY', w: 'wide-18' }
+        ],
+        [
+          { k: 'TAB', f: 'L_PINKY', w: 'wide-15' }, { k: 'q', f: 'L_PINKY' }, { k: 'w', f: 'L_RING' }, { k: 'e', f: 'L_MID' },
+          { k: 'r', f: 'L_INDEX' }, { k: 't', f: 'L_INDEX' }, { k: 'y', f: 'R_INDEX' }, { k: 'u', f: 'R_INDEX' },
+          { k: 'i', f: 'R_MID' }, { k: 'o', f: 'R_RING' }, { k: 'p', f: 'R_PINKY' }, { k: '[', f: 'R_PINKY' }, { k: ']', f: 'R_PINKY' }
+        ],
+        [
+          { k: 'CAPS', f: 'L_PINKY', w: 'wide-18' }, { k: 'a', f: 'L_PINKY' }, { k: 's', f: 'L_RING' }, { k: 'd', f: 'L_MID' },
+          { k: 'f', f: 'L_INDEX', bump: true }, { k: 'g', f: 'L_INDEX' }, { k: 'h', f: 'R_INDEX' }, { k: 'j', f: 'R_INDEX', bump: true },
+          { k: 'k', f: 'R_MID' }, { k: 'l', f: 'R_RING' }, { k: ';', f: 'R_PINKY' }, { k: "'", f: 'R_PINKY' },
+          { k: 'ENTER', f: 'R_PINKY', w: 'wide-18' }
+        ],
+        [
+          { k: 'SHIFT', f: 'L_PINKY', w: 'wide-22' }, { k: 'z', f: 'L_PINKY' }, { k: 'x', f: 'L_RING' },
+          { k: 'c', f: 'L_MID' }, { k: 'v', f: 'L_INDEX' }, { k: 'b', f: 'L_INDEX' }, { k: 'n', f: 'R_INDEX' },
+          { k: 'm', f: 'R_INDEX' }, { k: ',', f: 'R_MID' }, { k: '.', f: 'R_RING' }, { k: '/', f: 'R_PINKY' },
+          { k: 'SHIFT', f: 'R_PINKY', w: 'wide-22' }
+        ],
+        [
+          { k: 'SPACE', map: ' ', f: 'THUMB', w: 'space' }
+        ]
+      ]
+    };
+
+    const DRILLS = [
+      "asdf jklşi asdf jklşi fjdk slai şlkj fdsa asdfg hjklşi taş kale şifa",
+      "ğüşıöç ğüşıöç çağrı düğüm şüphe öykü ışık güneş çiçek yağmur rüzgar",
+      "sistem güvenlik ağ bağlantı sunucu çekirdek terminal erişim anahtar",
+      "chmod +x exploit.sh && ./exploit.sh --target 10.0.0.1 --port 443",
+      "sudo nmap -sS -O 192.168.1.0/24 && grep -i 'open' scan_report.log"
+    ];
+
+    let audioCtx = null;
+    let soundEnabled = true;
+
+    function playTick(isError = false) {
+      if (!soundEnabled) return;
+      try {
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+
+        const now = audioCtx.currentTime;
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+
+        if (!isError) {
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(1400, now);
+          osc.frequency.exponentialRampToValueAtTime(180, now + 0.025);
+          gain.gain.setValueAtTime(0.35, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.025);
+        } else {
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(160, now);
+          osc.frequency.linearRampToValueAtTime(90, now + 0.08);
+          gain.gain.setValueAtTime(0.4, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+        }
+
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start(now);
+        osc.stop(now + (isError ? 0.085 : 0.03));
+      } catch (e) {}
+    }
+
+    let currentLayout = 'TR-Q';
+    let targetText = DRILLS[0];
+    let cursor = 0;
+    let errors = 0;
+    let streak = 0;
+    let startTime = null;
+    let fingerMap = {};
+
+    const promptStream = document.getElementById('promptStream');
+    const deckWrapper = document.getElementById('deckWrapper');
+    const hwProxy = document.getElementById('hwProxy');
+
+    function normLower(ch) {
+      return currentLayout === 'TR-Q' ? ch.toLocaleLowerCase('tr-TR') : ch.toLowerCase();
+    }
+
+    function buildKeyboard() {
+      deckWrapper.innerHTML = '';
+      fingerMap = {};
+      const rows = LAYOUTS[currentLayout];
+
+      rows.forEach(row => {
+        const rDiv = document.createElement('div');
+        rDiv.className = 'kb-row';
+        row.forEach(keyObj => {
+          const kDiv = document.createElement('div');
+          kDiv.className = 'key';
+          if (keyObj.w) kDiv.classList.add(keyObj.w);
+          if (keyObj.bump) kDiv.classList.add('bump');
+
+          const charVal = keyObj.map || keyObj.k;
+          kDiv.dataset.key = normLower(charVal);
+          kDiv.textContent = keyObj.k.toLocaleUpperCase(currentLayout === 'TR-Q' ? 'tr-TR' : 'en-US');
+
+          if (charVal.length === 1) {
+            fingerMap[normLower(charVal)] = keyObj.f;
+          }
+
+          kDiv.addEventListener('pointerdown', (e) => {
+            e.preventDefault();
+            if (charVal === 'BACK') return;
+            if (charVal.length === 1) handleKeyInput(charVal);
+          });
+
+          rDiv.appendChild(kDiv);
+        });
+        deckWrapper.appendChild(rDiv);
+      });
+
+      updateTargets();
+    }
+
+    function renderPrompt() {
+      promptStream.innerHTML = '';
+      for (let i = 0; i < targetText.length; i++) {
+        const span = document.createElement('span');
+        span.className = 'ch';
+        if (i === 0) span.classList.add('cur');
+        span.textContent = targetText[i];
+        promptStream.appendChild(span);
+      }
+      updateTelemetry();
+      updateTargets();
+    }
+
+    function updateTargets() {
+      document.querySelectorAll('.key.target').forEach(el => el.classList.remove('target'));
+      document.querySelectorAll('.finger-node.active').forEach(el => el.classList.remove('active'));
+
+      if (cursor >= targetText.length) return;
+      const nextChar = normLower(targetText[cursor]);
+      const keyEl = document.querySelector(`.key[data-key="${CSS.escape(nextChar)}"]`);
+      if (keyEl) keyEl.classList.add('target');
+
+      const fName = fingerMap[nextChar] || 'R_PINKY';
+      document.getElementById('fingerCallout').textContent = fName;
+      document.querySelectorAll(`.finger-node[data-finger="${fName}"]`).forEach(el => el.classList.add('active'));
+    }
+
+    function updateTelemetry() {
+      const elapsedMin = startTime ? Math.max((Date.now() - startTime) / 60000, 0.01) : 0;
+      const wpm = startTime ? Math.round((cursor / 5) / elapsedMin) : 0;
+      const totalTyped = cursor + errors;
+      const acc = totalTyped > 0 ? Math.max(0, Math.round((cursor / totalTyped) * 100)) : 100;
+
+      document.getElementById('wpmVal').textContent = wpm;
+      document.getElementById('accVal').textContent = acc + '%';
+      document.getElementById('errVal').textContent = errors;
+      document.getElementById('streakVal').textContent = streak;
+      document.getElementById('progressText').textContent = `${cursor} / ${targetText.length} BYTES`;
+    }
+
+    function handleKeyInput(typedChar) {
+      if (cursor >= targetText.length) return;
+      if (!startTime) startTime = Date.now();
+
+      const expected = targetText[cursor];
+      const spans = promptStream.children;
+      const keyEl = document.querySelector(`.key[data-key="${CSS.escape(normLower(typedChar))}"]`);
+
+      if (typedChar === expected) {
+        playTick(false);
+        spans[cursor].classList.remove('cur', 'err');
+        spans[cursor].classList.add('ok');
+        cursor++;
+        streak++;
+
+        if (keyEl) {
+          keyEl.classList.add('pressed');
+          setTimeout(() => keyEl.classList.remove('pressed'), 90);
+        }
+
+        if (cursor < targetText.length) {
+          spans[cursor].classList.add('cur');
+        } else {
+          setTimeout(resetDrill, 350);
+        }
+      } else {
+        playTick(true);
+        errors++;
+        streak = 0;
+        spans[cursor].classList.add('err');
+        if (keyEl) {
+          keyEl.classList.add('err-flash');
+          setTimeout(() => keyEl.classList.remove('err-flash'), 140);
+        }
+      }
+
+      updateTelemetry();
+      updateTargets();
+    }
+
+    function resetDrill() {
+      cursor = 0;
+      errors = 0;
+      streak = 0;
+      startTime = null;
+      renderPrompt();
+    }
+
+    window.addEventListener('keydown', (e) => {
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        resetDrill();
+        return;
+      }
+      if (e.key.length === 1) {
+        e.preventDefault();
+        handleKeyInput(e.key);
+      }
+    });
+
+    hwProxy.addEventListener('input', () => {
+      const val = hwProxy.value;
+      if (val && val.length > 0) {
+        handleKeyInput(val[val.length - 1]);
+        hwProxy.value = '';
+      }
+    });
+
+    document.getElementById('terminalBox').addEventListener('click', () => hwProxy.focus());
+
+    document.getElementById('drillSelect').addEventListener('change', (e) => {
+      targetText = DRILLS[parseInt(e.target.value, 10)];
+      resetDrill();
+      e.target.blur();
+    });
+
+    document.getElementById('layoutBtn').addEventListener('click', (e) => {
+      currentLayout = currentLayout === 'TR-Q' ? 'US' : 'TR-Q';
+      e.target.textContent = `LAYOUT: ${currentLayout}`;
+      document.getElementById('sessionPath').textContent = `root@tick:/dev/tty1# ./inject --keymap=${currentLayout.toLowerCase()}`;
+      buildKeyboard();
+    });
+
+    document.getElementById('soundBtn').addEventListener('click', (e) => {
+      soundEnabled = !soundEnabled;
+      e.target.textContent = `TICK: ${soundEnabled ? 'ON' : 'OFF'}`;
+    });
+
+    document.getElementById('deckBtn').addEventListener('click', (e) => {
+      deckWrapper.classList.toggle('hidden');
+      const hidden = deckWrapper.classList.contains('hidden');
+      e.target.textContent = `DECK: ${hidden ? 'HIDDEN' : 'SHOW'}`;
+    });
+
+    document.getElementById('resetBtn').addEventListener('click', resetDrill);
+
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js').catch(() => {});
+      });
+    }
+
+    buildKeyboard();
+    renderPrompt();
+  </script>
+</body>
+</html>
